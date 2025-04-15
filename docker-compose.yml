@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    networks:
+      - internal_network
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on: 
+      - api
+    ports:
+      - 80:80
+    networks:
+      - internal_network
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_DB=sms_db
+      - POSTGRES_USER=sms_user
+      - POSTGRES_PASSWORD=sms_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "sms_user", "-d", "sms_db"]
+      interval: 10s
+      retries: 5
+volumes:
+  pgdata:
+networks:
+  internal_network:
+    driver: bridge
